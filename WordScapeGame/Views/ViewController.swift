@@ -63,7 +63,7 @@ class ViewController: UIViewController, ReactorKit.View {
             Word(text: "apricot", laneType: .laneA, priorityInLane: 1, topOffset: 30),
             
             Word(text: "banana", laneType: .laneB, priorityInLane: 0, topOffset: 90),
-            Word(text: "bluberry", laneType: .laneB, priorityInLane: 1, topOffset: 120),
+            Word(text: "blueberry", laneType: .laneB, priorityInLane: 1, topOffset: 120),
             
             Word(text: "cherry", laneType: .laneC, priorityInLane: 0, topOffset: 180),
             Word(text: "coconut", laneType: .laneC, priorityInLane: 1, topOffset: 210),
@@ -173,6 +173,8 @@ extension ViewController {
     private func remakeWordViews(of words: [Word]) {
         words.forEach { word in
             guard let wordView = wordsWithWordViews[word.text] else { return }
+//            wordView.layer.removeAllAnimations()
+            
             wordView.snp.remakeConstraints {
                 $0.top.equalToSuperview().offset(word.topOffset)
                 $0.leading.equalToSuperview()
@@ -189,7 +191,8 @@ extension ViewController {
     
     private func setupAnimation(of word: Word) -> UIViewPropertyAnimator? {
         
-        let duration = Double.random(in: 0.5...2.5)
+//        let duration = Double.random(in: 0.5...2.5)
+        let duration = Double.random(in: 3.5...3.5)
         let animator = UIViewPropertyAnimator(duration: duration, curve: .linear, animations: {  [weak self] in
             guard let self = self else { return }
             guard let wordView = wordsWithWordViews[word.text] else { return }
@@ -222,6 +225,17 @@ extension ViewController {
         }
     }
     
+    private func stopAnimation(of wordText: String) {
+        guard let wordView = wordsWithWordViews[wordText] else { return }
+        
+        wordsWithAnimators[wordText]?.stopAnimation(true) // stop animation and change state to [inactive]
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            // 레이어나 뷰의 동기화 문제, 애니메이션이 끝날 때까지 상태 안정화 보장 등을 고려한 완전한 초기화를 위해 0.2 대기
+            wordView.layer.removeAllAnimations()
+
+        }
+    }
+    
 }
 
 // MARK: - TapGesture, isUserInteractionEnabled
@@ -235,7 +249,7 @@ extension ViewController {
         guard let tappedWordView = gesture.view as? WordView else { return }
 
         // 1. Stop animation
-        wordsWithAnimators[tappedWordView.text]?.stopAnimation(true) // stop animation and change state to [inactive]
+        stopAnimation(of: tappedWordView.text)
         
         // 2. Manage views - hide from its superview
         tappedWordView.isHidden = true
@@ -301,6 +315,13 @@ extension ViewController {
                     owner.enableInteraction(for: word, isEnabled: true)
                     
                 case let .emptyBoxes(words):
+//                    words.forEach {
+//                        self.wordsWithAnimators[$0.text]?.stopAnimation(true) // 애니메이션 강제 중지
+//                        self.wordsWithAnimators[$0.text]?.finishAnimation(at: .start) // 초기 상태로 복귀
+//                        self.wordsWithAnimators[$0.text] = nil
+//
+//                    }
+                    
                     // 1. Empty captured words box
                     owner.resetWordsBox(captured: true, missed: true)
                     
