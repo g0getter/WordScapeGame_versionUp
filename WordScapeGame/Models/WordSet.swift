@@ -103,6 +103,21 @@ laneC: \(laneC.map { $0.text })
         }
         return false
     }
+    
+    var allWords: [Word] {
+        laneA + laneB + laneC
+    }
+    
+    func words(of laneType: LaneType) -> [Word] {
+        switch laneType {
+        case .laneA:
+            return laneA
+        case .laneB:
+            return laneB
+        case .laneC:
+            return laneC
+        }
+    }
 }
 
 extension Array where Element == Word {

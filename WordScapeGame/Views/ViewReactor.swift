@@ -9,8 +9,8 @@ import ReactorKit
 
 class ViewReactor: Reactor {
     init(words: [Word]) {
-        self.initialWords = words
-        self.wordSet = WordSet(initialWords)
+        self.initialWordSet = WordSet(words)
+        self.wordSet = initialWordSet //WordSet(initialWords)
     }
     
     let initialState = State(gameState: .initial)
@@ -20,7 +20,8 @@ class ViewReactor: Reactor {
             wordSet.print()
         }
     }
-    private let initialWords: [Word]
+    
+    private let initialWordSet: WordSet
     private var capturedWords: [Word] = []
     private var missedWords: [Word] = []
     
@@ -55,7 +56,6 @@ class ViewReactor: Reactor {
                 guard let wordsToStart = wordSet.extractNextWords() else {
                     return Observable.empty()
                 }
-//                let wordsToStart = currentWords.values.compactMap { $0.first }
                 
                 return Observable.just(Mutation.startAll(wordsToStart))
             }
@@ -63,8 +63,13 @@ class ViewReactor: Reactor {
             
         case .resetButtonTapped:
             let wordsToRestart = capturedWords + missedWords
+            
+            // Check if there's a lane(word) to start immediately
+            let endedLanes = getEndedLanes(wordsToFill: wordsToRestart)
+        
             // fill out wordSet
             wordSet.insertWords(wordsToRestart)
+            
             // empty 2 boxes
             capturedWords = []
             missedWords = []
@@ -74,15 +79,20 @@ class ViewReactor: Reactor {
                 return Observable.empty()
                 
             case .end: // initialize all and go to initial state
-//                // fill out current words, sort them properly and set to initial state
                 return Observable.just(Mutation.initial)
             default: // is still running
+                // if should start a lane immediately because all words in the lane are filled newly
+                if let wordsToStartImmediately = endedLanes?.compactMap({ wordSet.extractNextWord(lane: $0) }) {
+                    return Observable.concat([
+                        Observable.just(.emptyBoxes(wordsToRestart)),
+                        Observable.just(.startAll(wordsToStartImmediately))
+                    ])
+                }
                 return Observable.just(Mutation.emptyBoxes(wordsToRestart))
             }
             
         case let .missed(word):
             missedWords.append(word)
-//            wordSet.remove(word)
             // 3 cases
             
             // i) if there are remaining words to animate, start next one
@@ -94,9 +104,8 @@ class ViewReactor: Reactor {
             }
             
             // ii) if it is the last word of all lanes, end the game
-            print("✅missed \(word.text), \(capturedWords.count)+\(missedWords.count) AND \(initialWords.count)")
-            if capturedWords.count + missedWords.count == initialWords.count {
-//            if wordSet.isEmpty {
+            print("✅missed \(word.text), \(capturedWords.count)+\(missedWords.count) AND \(initialWordSet.allWords.count)")
+            if capturedWords.count + missedWords.count == initialWordSet.allWords.count {
                 return Observable.concat([
                     Observable.just(Mutation.missed(word)),
                     Observable.just(Mutation.ended)
@@ -110,7 +119,7 @@ class ViewReactor: Reactor {
             
         case let .captured(wordText):
             // convert wordText -> word
-            guard let word = initialWords.first(where: { $0.text == wordText }) else {
+            guard let word = initialWordSet.allWords.first(where: { $0.text == wordText }) else {
                 return Observable.empty()
             }
             capturedWords.append(word)
@@ -126,8 +135,7 @@ class ViewReactor: Reactor {
             }
             
             // ii) end the game
-            if capturedWords.count + missedWords.count == initialWords.count {
-//            if wordSet.isEmpty {
+            if capturedWords.count + missedWords.count == initialWordSet.allWords.count {
                 return Observable.concat([
                     Observable.just(Mutation.captured(word)),
                     Observable.just(Mutation.ended)
@@ -168,6 +176,22 @@ class ViewReactor: Reactor {
         }
         
         return newState
+    }
+}
+
+extension ViewReactor {
+    /// Returns `[LaneType]` that ended on screen, not empty in `wordSet`, by comparing `initialWordSet` and `wordsToFill`
+    private func getEndedLanes(wordsToFill: [Word]) -> [LaneType]? {
+        var lanes = Set<LaneType>()
+        
+        let dict = Dictionary(grouping: wordsToFill) { $0.laneType }
+        dict.forEach { (laneType, words) in
+            if words.count == initialWordSet.words(of: laneType).count {
+                lanes.insert(laneType)
+            }
+        }
+        
+        return lanes.isEmpty ? nil : Array(lanes)
     }
 }
 
