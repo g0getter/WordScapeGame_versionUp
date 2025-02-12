@@ -10,7 +10,7 @@ import ReactorKit
 class ViewReactor: Reactor {
     init(words: [Word]) {
         self.initialWordSet = WordSet(words)
-        self.wordSet = initialWordSet //WordSet(initialWords)
+        self.wordSet = initialWordSet
     }
     
     let initialState = State(gameState: .initial)
@@ -124,7 +124,6 @@ class ViewReactor: Reactor {
             }
             capturedWords.append(word)
             
-            print("🔥captured: \(capturedWords)\nwordSet:")
             wordSet.print()
             // i) start next one
             if let nextWord = wordSet.extractNextWord(lane: word.laneType) {

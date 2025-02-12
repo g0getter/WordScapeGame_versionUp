@@ -17,21 +17,16 @@ struct WordSet {
     }
     
     init(_ words: [Word]) {
-        laneA = words.filter { $0.laneType == .laneA }.sorted(by: { $0.priorityInLane < $1.priorityInLane })
-        laneB = words.filter { $0.laneType == .laneB }.sorted(by: { $0.priorityInLane < $1.priorityInLane })
-        laneC = words.filter { $0.laneType == .laneC }.sorted(by: { $0.priorityInLane < $1.priorityInLane })
+        laneA = words
+            .filter { $0.laneType == .laneA }
+            .sorted(by: { $0.priorityInLane < $1.priorityInLane })
+        laneB = words
+            .filter { $0.laneType == .laneB }
+            .sorted(by: { $0.priorityInLane < $1.priorityInLane })
+        laneC = words
+            .filter { $0.laneType == .laneC }
+            .sorted(by: { $0.priorityInLane < $1.priorityInLane })
     }
-    
-//    mutating func remove(_ word: Word) {
-//        switch word.laneType {
-//        case .laneA:
-//            laneA.removeAll { $0 == word }
-//        case .laneB:
-//            laneB.removeAll { $0 == word }
-//        case .laneC:
-//            laneC.removeAll { $0 == word }
-//        }
-//    }
 }
 
 extension WordSet {
@@ -119,22 +114,3 @@ laneC: \(laneC.map { $0.text })
         }
     }
 }
-
-extension Array where Element == Word {
-    /// Inserts to a proper index using binary search
-    func insertionIndex(of newWord: Word) -> Int {
-        var low = 0
-        var high = self.count
-        while low < high {
-            let mid = low + (high - low) / 2
-            if self[mid].priorityInLane < newWord.priorityInLane {
-                low = mid + 1
-            } else {
-                high = mid
-            }
-        }
-        return low
-    }
-}
-
-

@@ -176,7 +176,6 @@ extension ViewController {
     private func remakeWordViews(of words: [Word]) {
         words.forEach { word in
             guard let wordView = wordsWithWordViews[word.text] else { return }
-//            wordView.layer.removeAllAnimations()
             
             wordView.snp.remakeConstraints {
                 $0.top.equalToSuperview().offset(word.topOffset)
@@ -318,12 +317,6 @@ extension ViewController {
                     owner.enableInteraction(for: word, isEnabled: true)
                     
                 case let .emptyBoxes(words):
-//                    words.forEach {
-//                        self.wordsWithAnimators[$0.text]?.stopAnimation(true) // 애니메이션 강제 중지
-//                        self.wordsWithAnimators[$0.text]?.finishAnimation(at: .start) // 초기 상태로 복귀
-//                        self.wordsWithAnimators[$0.text] = nil
-//
-//                    }
                     
                     // 1. Empty captured words box
                     owner.resetWordsBox(captured: true, missed: true)
