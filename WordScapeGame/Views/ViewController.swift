@@ -194,8 +194,7 @@ extension ViewController {
     
     private func setupAnimation(of word: Word) -> UIViewPropertyAnimator? {
         
-//        let duration = Double.random(in: 0.5...2.5)
-        let duration = Double.random(in: 3.5...3.5)
+        let duration = Double.random(in: 0.5...4.5)
         let animator = UIViewPropertyAnimator(duration: duration, curve: .linear, animations: {  [weak self] in
             guard let self = self else { return }
             guard let wordView = wordsWithWordViews[word.text] else { return }
