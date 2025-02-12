@@ -9,18 +9,18 @@ import ReactorKit
 
 class ViewReactor: Reactor {
     init(words: [Word]) {
-        self.words = words
-        
-        currentWords = Dictionary(grouping: words, by: { $0.laneType })
-            .mapValues { $0.sorted { $0.priorityInLane < $1.priorityInLane } }
+        self.initialWords = words
+        self.wordSet = WordSet(initialWords)
     }
     
     let initialState = State(gameState: .initial)
     
-    // FIXME: Optimize words variables
-    private let words: [Word]
-    
-    private var currentWords: [LaneType: [Word]] = [:]
+    private var wordSet: WordSet {
+        didSet {
+            wordSet.print()
+        }
+    }
+    private let initialWords: [Word]
     private var capturedWords: [Word] = []
     private var missedWords: [Word] = []
     
@@ -52,49 +52,51 @@ class ViewReactor: Reactor {
         switch action {
         case .startButtonTapped:
             if currentState.gameState == .initial {
-                let wordsToStart = currentWords.values.compactMap { $0.first }
+                guard let wordsToStart = wordSet.extractNextWords() else {
+                    return Observable.empty()
+                }
+//                let wordsToStart = currentWords.values.compactMap { $0.first }
+                
                 return Observable.just(Mutation.startAll(wordsToStart))
             }
             return Observable.empty()
             
         case .resetButtonTapped:
             let wordsToRestart = capturedWords + missedWords
+            // fill out wordSet
+            wordSet.insertWords(wordsToRestart)
+            // empty 2 boxes
             capturedWords = []
             missedWords = []
             
             switch currentState.gameState {
-            case .initial:
+            case .initial: // do nothing
                 return Observable.empty()
-            case .end:
-                // fill out current words, sort them properly and set to initial state
-                currentWords = Dictionary(grouping: wordsToRestart, by: { $0.laneType })
-                    .mapValues { $0.sorted { $0.priorityInLane < $1.priorityInLane } }
+                
+            case .end: // initialize all and go to initial state
+//                // fill out current words, sort them properly and set to initial state
                 return Observable.just(Mutation.initial)
             default: // is still running
-                // empty 2 boxes and fill currentWords
-                wordsToRestart.forEach {
-                    currentWords[$0.laneType]?.append($0)
-                }
-                
                 return Observable.just(Mutation.emptyBoxes(wordsToRestart))
             }
             
         case let .missed(word):
             missedWords.append(word)
-            currentWords[word.laneType]?.removeAll(where: { $0 == word }) // remove
+//            wordSet.remove(word)
             // 3 cases
             
             // i) if there are remaining words to animate, start next one
-            if let nextWord = currentWords[word.laneType]?.first {
+            if let nextWord = wordSet.extractNextWord(lane: word.laneType) {
                 return Observable.concat([
                     Observable.just(Mutation.missed(word)),
                     Observable.just(Mutation.start(nextWord))
                 ])
             }
             
-            // ii) if it is the last word, end the game
-            print("✅missed \(word.text), \(capturedWords.count)+\(missedWords.count) AND \(words.count)")
-            if capturedWords.count + missedWords.count == words.count {
+            // ii) if it is the last word of all lanes, end the game
+            print("✅missed \(word.text), \(capturedWords.count)+\(missedWords.count) AND \(initialWords.count)")
+            if capturedWords.count + missedWords.count == initialWords.count {
+//            if wordSet.isEmpty {
                 return Observable.concat([
                     Observable.just(Mutation.missed(word)),
                     Observable.just(Mutation.ended)
@@ -107,14 +109,16 @@ class ViewReactor: Reactor {
             ])
             
         case let .captured(wordText):
-            guard let word = words.first(where: { $0.text == wordText }) else {
+            // convert wordText -> word
+            guard let word = initialWords.first(where: { $0.text == wordText }) else {
                 return Observable.empty()
             }
             capturedWords.append(word)
-            currentWords[word.laneType]?.removeAll(where: { $0 == word }) // remove
             
+            print("🔥captured: \(capturedWords)\nwordSet:")
+            wordSet.print()
             // i) start next one
-            if let nextWord = currentWords[word.laneType]?.first {
+            if let nextWord = wordSet.extractNextWord(lane: word.laneType) {
                 return Observable.concat([
                     Observable.just(Mutation.captured(word)),
                     Observable.just(Mutation.start(nextWord))
@@ -122,7 +126,8 @@ class ViewReactor: Reactor {
             }
             
             // ii) end the game
-            if capturedWords.count + missedWords.count == words.count {
+            if capturedWords.count + missedWords.count == initialWords.count {
+//            if wordSet.isEmpty {
                 return Observable.concat([
                     Observable.just(Mutation.captured(word)),
                     Observable.just(Mutation.ended)
@@ -141,15 +146,20 @@ class ViewReactor: Reactor {
         switch mutation {
         case .initial:
             newState.gameState = .initial
+            
         case let .startAll(words):
             newState.gameState = .startAll(words)
+            
         case let .start(word):
             newState.gameState = .start(word)
+            
         case let .emptyBoxes(words):
             newState.gameState = .emptyBoxes(words)
+            
         case let .missed(word):
             newState.newMissedWord = word
             newState.gameState = .running //
+            
         case let .captured(word):
             newState.newCapturedWord = word
             newState.gameState = .running //
