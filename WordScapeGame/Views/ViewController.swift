@@ -61,12 +61,15 @@ class ViewController: UIViewController, ReactorKit.View {
         initialWords = [
             Word(text: "apple", laneType: .laneA, priorityInLane: 0, topOffset: 0),
             Word(text: "apricot", laneType: .laneA, priorityInLane: 1, topOffset: 30),
+            Word(text: "avocado", laneType: .laneA, priorityInLane: 2, topOffset: 60),
             
-            Word(text: "banana", laneType: .laneB, priorityInLane: 0, topOffset: 90),
-            Word(text: "blueberry", laneType: .laneB, priorityInLane: 1, topOffset: 120),
+            Word(text: "banana", laneType: .laneB, priorityInLane: 0, topOffset: 120),
+            Word(text: "blueberry", laneType: .laneB, priorityInLane: 1, topOffset: 150),
+            Word(text: "blood orange", laneType: .laneB, priorityInLane: 2, topOffset: 180),
             
-            Word(text: "cherry", laneType: .laneC, priorityInLane: 0, topOffset: 180),
-            Word(text: "coconut", laneType: .laneC, priorityInLane: 1, topOffset: 210),
+            Word(text: "cherry", laneType: .laneC, priorityInLane: 0, topOffset: 240),
+            Word(text: "coconut", laneType: .laneC, priorityInLane: 1, topOffset: 270),
+            Word(text: "cranberry", laneType: .laneC, priorityInLane: 2, topOffset: 300),
         ]
         
         setupWordViews(initialWords) // should be called first
@@ -199,6 +202,7 @@ extension ViewController {
             wordView.snp.remakeConstraints {
                 $0.top.equalTo(word.topOffset)
                 $0.trailing.equalToSuperview()
+                $0.height.equalTo(30)
             }
             wordView.superview?.layoutIfNeeded() // apply the updated layout immediately
         })
